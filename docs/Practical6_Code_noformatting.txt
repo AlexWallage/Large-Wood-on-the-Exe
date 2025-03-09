@@ -1,0 +1,249 @@
+README: the following is the verbatim code that is provided to you on the practical 5 handout. To avoid formatting issues, you may want to copy and paste the code sections reported here as if you were following the handout.
+
+IMPORTANT: don't copy and paste in bulk, as each section follows the practical handout, and you are required to carry out some tasks which are not included within the given code. Instead, copy each part within two delimiters that are identified by dashed lines -------
+
+-------------------------------------------------------------------------------------------------
+PART A
+-------------------------------------------------------------------------------------------------
+
+
+
+#################################################################
+##           Practical 6 for GEOM184 - Open Source GIS         ##
+##                      27/02/2025                             ##
+##                  Creating a ShinyApp                        ##
+##                         App.R                               ##
+##        code by Diego Panici (d.panici@exeter.ac.uk)         ##
+#################################################################
+
+
+# Load packages ----
+library(shiny)
+library(leaflet)
+library(sf)
+library(raster)
+library(ggplot2)
+library(ggiraph)
+library(RColorBrewer)
+library(terra)
+library(leafem)
+
+options(shiny.maxRequestSize = 1000 * 1024^2)
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+# Run global script containing all your relevant data ----
+source("Global.R")
+
+# Define UI for visualisation ----
+source("UI.R")
+
+ui <- navbarPage("Instream large wood on the River Isonzo", id = 'nav',
+                 tabPanel("Map", 
+                         div(class="outer",
+                             leafletOutput("map", height = "calc(100vh - 70px)")
+                         )
+                 )
+)
+
+# Define the server that performs all necessary operations ----
+server <- function(input, output, session){
+  source("Server.R", local = TRUE)
+}
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+#################################################################
+##           Practical 6 for GEOM184 - Open Source GIS         ##
+##                      27/02/2025                             ##
+##                  Creating a ShinyApp                        ##
+##                        Global.R                             ##
+##        code by Diego Panici (d.panici@exeter.ac.uk)         ##
+#################################################################
+
+
+# G1 Load large wood, river, and bridge data ----
+lw_points <- st_read("LW_Isonzo.shp")
+river <- st_read("RiverIsonzo.shp")
+bridges <- st_read("Bridges_Isonzo.shp")
+
+#Convert vectors to CRS 4326
+lw_points <- st_transform(lw_points, crs = 4326)
+river <- st_transform(river, crs = 4326)
+bridges <- st_transform(bridges, crs = 4326)
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+#################################################################
+##           Practical 6 for GEOM184 - Open Source GIS         ##
+##                      27/02/2025                             ##
+##                  Creating a ShinyApp                        ##
+##                         UI.R                                ##
+##        code by Diego Panici (d.panici@exeter.ac.uk)         ##
+#################################################################
+
+
+div(class="outer",
+    leafletOutput("map", height = "calc(100vh - 70px)")
+)
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+#################################################################
+##           Practical 6 for GEOM184 - Open Source GIS         ##
+##                      27/02/2025                             ##
+##                  Creating a ShinyApp                        ##
+##                       Server.R                              ##
+##        code by Diego Panici (d.panici@exeter.ac.uk)         ##
+#################################################################
+
+# S1 Render leaflet map ----
+# Leaflet map output
+  output$map <- renderLeaflet({
+    
+    leaflet() %>% 
+      
+      setView(lng=13.533545, lat=45.850065, zoom=11.3) %>%
+      
+      addProviderTiles (providers$OpenStreetMap, group = "Colour")
+    
+        })
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+      addPolylines(data = river, color = "blue", weight = 2, opacity = 0.8, group = "River") %>%
+      addCircles(data = bridges,
+                color = "black",
+                fillColor="purple",
+                fillOpacity=0.8,
+                weight = 2,
+                radius = 50,
+                group = "Bridges")
+
+
+
+
+-------------------------------------------------------------------------------------------------
+PART B
+-------------------------------------------------------------------------------------------------
+
+
+
+clusters <- st_read("IsonzoClusters.shp")
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+# Dynamically generate colours based on number of unique clusters
+num_clusters <- length(unique(clusters$CLUSTER_ID))
+pal_clusters <- colorFactor(palette = colorRampPalette(brewer.pal(12, "Paired"))(num_clusters), domain = clusters$CLUSTER_ID)
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+# Add popups for large wood points
+  observe({
+    leafletProxy("map") %>%
+      clearMarkers() %>%
+      addCircleMarkers(data = clusters, fillColor = ~pal_clusters(CLUSTER_ID), color = "black", 
+                       weight = 1, radius = 5, stroke = TRUE, fillOpacity = 0.7,
+                       popup = ~paste("<b>Type:</b>", Type, "<br><b>Imagery used:</b>", Imagery, "<br><b>Cluster ID:</b>", CLUSTER_ID),
+                       group = "Large Wood")
+  })
+
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+heatmap <- rast("Heatmap.tif")
+heatmap <- project(heatmap, crs(river))
+
+pal_heatmap <- colorNumeric(palette = "inferno", domain = na.omit(values(heatmap)), na.color = "transparent")
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+addRasterImage(heatmap, colors = pal_heatmap, opacity = 0.7, group = "Heatmap")
+
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+ addImageQuery(
+      heatmap,
+      layerId = "Heatmap",
+      prefix = "Value: ",
+      digits = 2,
+      position = "topright",
+      type = "mousemove",  # Show values on mouse movement
+      options = queryOptions(position = "topright"),  # Remove the TRUE text
+      group = "Heatmap"
+    ) %>%
+
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+addLayersControl(
+      baseGroups = c("Colour"),
+      overlayGroups = c("River", "Bridges", "Nearest distance", "Large Wood", "Heatmap"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
