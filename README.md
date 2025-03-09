@@ -2,6 +2,8 @@ This repository contains code to create a ShinyApp using R for a Coursework proj
 
 The web app displays outputs from the spatial analysis of Large Wood distribution on the River Exe and suggests locations to place Large Wood Catchers
 
+If downloading this rep to be ran, please amend the file path in App.R to your path.
+
 
 references:
 
