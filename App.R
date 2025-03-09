@@ -7,8 +7,8 @@
 ##        code by Alex Wallage (aw807@exeter.ac.uk)            ##
 #################################################################
 
-
-setwd("D:/Backup/OneDrive - University of Exeter/MSc GIS/GEOM184_Open_Source_GIS/Practical6") # nolint
+# add your path here
+setwd("ADD FILE PATH HERE") # nolint
 
 # Load packages ----
 library(shiny)
